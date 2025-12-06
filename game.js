@@ -1,4 +1,4 @@
-// 获取DOM元素
+// 获取DOM
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const startButton = document.getElementById('startButton');
@@ -8,7 +8,7 @@ const currentScoreElement = document.getElementById('current-score');
 const highScoreElement = document.getElementById('high-score');
 const finalScoreElement = document.getElementById('final-score');
 
-// 游戏状态
+// 游戏
 let gameState = 'ready'; // ready, playing, gameOver
 let score = 0;
 let highScore = localStorage.getItem('dinoHighScore') || 0;
@@ -17,7 +17,7 @@ let frames = 0;
 // 设置初始高分
 highScoreElement.textContent = highScore;
 
-// 恐龙对象
+// 恐龙
 const dino = {
     x: 50,
     y: canvas.height - 50 - 20, // 距离地面20px
@@ -29,7 +29,7 @@ const dino = {
     grounded: true
 };
 
-// 障碍物数组
+// 障碍物
 const obstacles = [];
 
 // 障碍物类
