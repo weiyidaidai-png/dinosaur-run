@@ -1,4 +1,5 @@
 // 获取DOM元素
+const currentModeElement = document.getElementById('current-mode');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const startButton = document.getElementById('startButton');
@@ -7,12 +8,81 @@ const gameOverScreen = document.getElementById('gameOver');
 const currentScoreElement = document.getElementById('current-score');
 const highScoreElement = document.getElementById('high-score');
 const finalScoreElement = document.getElementById('final-score');
+const currentSpeedElement = document.getElementById('current-speed');
 
 // 游戏状态
 let gameState = 'ready'; // ready, playing, gameOver
 let score = 0;
 let highScore = localStorage.getItem('dinoHighScore') || 0;
 let frames = 0;
+
+// 加速机制配置
+const SPEED_STEP = 0.2; // 每次加速的幅度
+const SPEED_INTERVAL = 600; // 加速间隔（帧数，60帧=1秒，所以这里是10秒）
+const MAX_SPEED = 400; // 最大速度限制（基础速度4 * 100倍 = 400）
+
+// 昼夜模式配置
+const DAY_NIGHT_INTERVAL = 1200; // 昼夜切换间隔（帧数，60帧=1秒，所以这里是20秒）
+const TRANSITION_TIME = 30; // 过渡动画时间（帧数，60帧=1秒，所以这里是0.5秒）
+let isNightMode = false;
+let dayNightFrameCounter = 0;
+let isTransitioning = false;
+let transitionFrameCounter = 0;
+let transitionDirection = 1; // 1 for night, -1 for day
+let currentSpeed = 1.0; // 当前游戏速度倍数
+
+// 模式切换函数
+function toggleDayNightMode() {
+    isNightMode = !isNightMode;
+
+    // 更新body类名
+    if (isNightMode) {
+        document.body.classList.add('night-mode');
+        currentModeElement.textContent = 'Night Mode';
+    } else {
+        document.body.classList.remove('night-mode');
+        currentModeElement.textContent = 'Day Mode';
+    }
+}
+
+// 昼夜模式过渡效果
+function updateDayNightTransition() {
+    if (isTransitioning) {
+        transitionFrameCounter++;
+
+        // 计算过渡进度（0到1）
+        const progress = transitionFrameCounter / TRANSITION_TIME;
+
+        // 添加过渡效果（这里可以根据需要添加更多效果）
+        // 例如：调整透明度、颜色渐变等
+
+        // 过渡结束
+        if (transitionFrameCounter >= TRANSITION_TIME) {
+            isTransitioning = false;
+            transitionFrameCounter = 0;
+
+            // 切换模式
+            toggleDayNightMode();
+        }
+    }
+}
+
+// 昼夜模式自动切换逻辑
+function updateDayNightCycle() {
+    if (!isTransitioning) {
+        dayNightFrameCounter++;
+
+        // 到达切换间隔
+        if (dayNightFrameCounter >= DAY_NIGHT_INTERVAL) {
+            dayNightFrameCounter = 0;
+            isTransitioning = true;
+            transitionDirection = isNightMode ? -1 : 1;
+
+            // 触发过渡效果
+            updateDayNightTransition();
+        }
+    }
+}
 
 // 设置初始高分
 highScoreElement.textContent = highScore;
@@ -39,19 +109,21 @@ class Obstacle {
         this.height = 25 + Math.random() * 25; // 随机高度
         this.x = canvas.width;
         this.y = canvas.height - 50 - this.height; // 距离地面
-        this.speed = 4;
+        this.baseSpeed = 4; // 基础速度
     }
 
     update() {
-        this.x -= this.speed;
+        // 根据当前游戏速度调整障碍物移动速度
+        this.x -= this.baseSpeed * currentSpeed;
     }
 
     draw() {
-        ctx.fillStyle = '#000';
+        // 根据当前模式设置障碍物颜色
+        ctx.fillStyle = isNightMode ? '#f0f0f0' : '#000';
         ctx.fillRect(this.x, this.y, this.width, this.height);
 
         // 添加像素风格细节
-        ctx.fillStyle = '#333';
+        ctx.fillStyle = isNightMode ? '#ccc' : '#333';
         ctx.fillRect(this.x + 2, this.y + 2, this.width - 4, this.height - 4);
     }
 }
@@ -78,13 +150,14 @@ function drawGround() {
 
 // 绘制恐龙
 function drawDino() {
-    ctx.fillStyle = '#000';
+    // 根据当前模式设置恐龙颜色
+    ctx.fillStyle = isNightMode ? '#f0f0f0' : '#000';
     ctx.fillRect(dino.x, dino.y, dino.width, dino.height);
 
     // 添加像素风格的眼睛
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = isNightMode ? '#333' : '#fff';
     ctx.fillRect(dino.x + 12, dino.y + 5, 4, 4);
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = isNightMode ? '#f0f0f0' : '#000';
     ctx.fillRect(dino.x + 14, dino.y + 7, 2, 2);
 }
 
@@ -181,6 +254,7 @@ function resetGame() {
     gameState = 'ready';
     score = 0;
     frames = 0;
+    currentSpeed = 1.0; // 重置游戏速度
     obstacles.length = 0; // 清空障碍物数组
 
     // 重置恐龙位置
@@ -191,6 +265,7 @@ function resetGame() {
 
     // 重置界面
     currentScoreElement.textContent = score;
+    currentSpeedElement.textContent = currentSpeed.toFixed(1); // 重置速度显示
     gameOverScreen.classList.add('hidden');
 }
 
@@ -217,10 +292,18 @@ function gameLoop() {
             endGame();
         }
 
-        // 逐渐增加游戏速度
-        if (frames % 100 === 0 && Obstacle.prototype.speed < 8) {
-            Obstacle.prototype.speed += 0.2;
+        // 定期增加游戏速度
+        if (frames % SPEED_INTERVAL === 0 && currentSpeed < MAX_SPEED / 4) {
+            currentSpeed += SPEED_STEP;
+            // 更新速度显示
+            currentSpeedElement.textContent = currentSpeed.toFixed(1);
         }
+
+        // 更新昼夜模式循环
+        updateDayNightCycle();
+
+        // 更新昼夜模式过渡效果
+        updateDayNightTransition();
     } else if (gameState === 'ready') {
         // 绘制准备状态的恐龙
         drawDino();
