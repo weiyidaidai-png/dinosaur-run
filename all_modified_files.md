@@ -1,3 +1,198 @@
+## 所有修改的文件内容
+
+### 1. index.html
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恐龙跑酷游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="score">分数: <span id="current-score">0</span></div>
+            <div class="high-score">最高分: <span id="high-score">0</span></div>
+            <div class="speed">速度: <span id="current-speed">1.0</span>x</div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="200"></canvas>
+        <div class="game-controls">
+            <button id="startButton">开始游戏</button>
+            <div class="instructions">
+                <p>游戏说明：</p>
+                <p>1. 使用空格键或点击屏幕让恐龙跳跃</p>
+                <p>2. 避开路上的仙人掌障碍物</p>
+                <p>3. 跑得越远，分数越高</p>
+                <p>4. 游戏会记录你的最高分数</p>
+            </div>
+        </div>
+        <div id="gameOver" class="game-over hidden">
+            <h2>游戏结束</h2>
+            <p>最终分数: <span id="final-score">0</span></p>
+            <button id="restartButton">重新开始</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>```
+
+### 2. style.css
+
+```css
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    max-width: 900px;
+    width: 100%;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.score, .high-score, .speed {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+#current-score, #high-score {
+    color: #e74c3c;
+}
+
+#current-speed {
+    color: #3498db;
+}
+
+#gameCanvas {
+    display: block;
+    margin: 0 auto 20px;
+    background-color: #f0f0f0;
+    border: 2px solid #333;
+    border-radius: 5px;
+}
+
+.game-controls {
+    margin-bottom: 20px;
+}
+
+#startButton, #restartButton {
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#startButton:hover, #restartButton:hover {
+    background-color: #27ae60;
+}
+
+#startButton:active, #restartButton:active {
+    transform: translateY(1px);
+}
+
+.instructions {
+    margin-top: 15px;
+    color: #666;
+    font-size: 14px;
+}
+
+.instructions p {
+    margin: 5px 0;
+}
+
+.game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.game-over h2 {
+    color: #e74c3c;
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.game-over p {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+#final-score {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        padding: 15px;
+    }
+
+    .game-header {
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    #gameCanvas {
+        width: 100%;
+        max-width: 400px;
+        height: auto;
+    }
+
+    #startButton, #restartButton {
+        padding: 10px 25px;
+        font-size: 14px;
+    }
+}```
+
+### 3. game.js
+
+```javascript
 // 获取DOM元素
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -18,7 +213,7 @@ let frames = 0;
 // 加速机制配置
 const SPEED_STEP = 0.2; // 每次加速的幅度
 const SPEED_INTERVAL = 600; // 加速间隔（帧数，60帧=1秒，所以这里是10秒）
-const MAX_SPEED = 400; // 最大速度限制（基础速度4 * 100倍 = 400）
+const MAX_SPEED = 8; // 最大速度限制
 let currentSpeed = 1.0; // 当前游戏速度倍数
 
 // 设置初始高分
@@ -228,7 +423,7 @@ function gameLoop() {
         }
 
         // 定期增加游戏速度
-        if (frames % SPEED_INTERVAL === 0 && currentSpeed < MAX_SPEED / 4) {
+        if (frames % SPEED_INTERVAL === 0 && currentSpeed * 4 < MAX_SPEED) {
             currentSpeed += SPEED_STEP;
             // 更新速度显示
             currentSpeedElement.textContent = currentSpeed.toFixed(1);
@@ -295,4 +490,9 @@ canvas.addEventListener('touchstart', (e) => {
 });
 
 // 启动游戏循环
-gameLoop();
+gameLoop();```
+
+## Git 差异对比
+
+```diff
+```
