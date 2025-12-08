@@ -31,6 +31,16 @@ let transitionFrameCounter = 0;
 let transitionDirection = 1; // 1 for night, -1 for day
 let currentSpeed = 1.0; // 当前游戏速度倍数
 
+// 云朵配置
+const CLOUD_LAYERS = 3; // 云朵层数（前景、中景、远景）
+const CLOUD_CONFIGS = [
+    { count: 3, minSize: 30, maxSize: 50, baseSpeed: 1.5, depth: 0.3 }, // 前景云（近）
+    { count: 4, minSize: 20, maxSize: 35, baseSpeed: 1.0, depth: 0.5 }, // 中景云（中）
+    { count: 5, minSize: 15, maxSize: 25, baseSpeed: 0.6, depth: 0.8 }  // 远景云（远）
+];
+const CLOUD_Y_RANGE = { min: 20, max: 100 }; // 云朵Y轴范围
+let clouds = []; // 云朵数组
+
 // 模式切换函数
 function toggleDayNightMode() {
     isNightMode = !isNightMode;
@@ -128,6 +138,64 @@ class Obstacle {
     }
 }
 
+// 云朵类
+class Cloud {
+    constructor(layerIndex) {
+        this.layerIndex = layerIndex;
+        this.config = CLOUD_CONFIGS[layerIndex];
+
+        // 随机大小
+        this.size = this.config.minSize + Math.random() * (this.config.maxSize - this.config.minSize);
+
+        // 随机初始X位置（确保云朵分布在整个宽度范围内）
+        this.x = Math.random() * canvas.width;
+
+        // 随机Y位置，在指定范围内
+        this.y = CLOUD_Y_RANGE.min + Math.random() * (CLOUD_Y_RANGE.max - CLOUD_Y_RANGE.min);
+
+        // 随机偏移量，用于生成不规则形状
+        this.offset1 = Math.random() * 5;
+        this.offset2 = Math.random() * 5;
+        this.offset3 = Math.random() * 5;
+    }
+
+    update() {
+        // 根据云朵层级和当前游戏速度调整移动速度
+        this.x -= this.config.baseSpeed * currentSpeed * this.config.depth;
+
+        // 当云朵移出屏幕左侧时，从右侧重新进入
+        if (this.x + this.size < 0) {
+            this.x = canvas.width + Math.random() * 100; // 增加随机偏移，避免云朵重叠
+            this.y = CLOUD_Y_RANGE.min + Math.random() * (CLOUD_Y_RANGE.max - CLOUD_Y_RANGE.min); // 随机Y位置
+        }
+    }
+
+    draw() {
+        // 根据昼夜模式设置云朵颜色和透明度
+        if (isNightMode) {
+            // 夜间模式下云朵更暗且透明度更低
+            ctx.fillStyle = `rgba(128, 128, 128, ${0.3 + this.config.depth * 0.2})`;
+        } else {
+            // 白天模式下云朵更亮且透明度更高
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + this.config.depth * 0.3})`;
+        }
+
+        // 绘制不规则形状的云朵（使用多个椭圆组合）
+        ctx.beginPath();
+        ctx.arc(this.x + this.size * 0.2, this.y + this.size * 0.3, this.size * 0.2 + this.offset1, 0, Math.PI * 2);
+        ctx.arc(this.x + this.size * 0.5, this.y + this.size * 0.2, this.size * 0.25 + this.offset2, 0, Math.PI * 2);
+        ctx.arc(this.x + this.size * 0.8, this.y + this.size * 0.3, this.size * 0.2 + this.offset3, 0, Math.PI * 2);
+        ctx.arc(this.x + this.size * 0.4, this.y + this.size * 0.5, this.size * 0.15, 0, Math.PI * 2);
+        ctx.arc(this.x + this.size * 0.6, this.y + this.size * 0.5, this.size * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 添加云朵边框，增强像素风格效果
+        ctx.strokeStyle = isNightMode ? `rgba(100, 100, 100, ${0.5})` : `rgba(200, 200, 200, ${0.6})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+}
+
 // 地面对象
 const ground = {
     x: 0,
@@ -145,6 +213,38 @@ function drawGround() {
     ctx.fillStyle = '#654321';
     for (let i = 0; i < ground.width; i += 20) {
         ctx.fillRect(i, ground.y + 10, 10, 10);
+    }
+}
+
+// 初始化云朵
+function initClouds() {
+    clouds = []; // 清空云朵数组
+
+    // 为每一层创建指定数量的云朵
+    for (let layer = 0; layer < CLOUD_LAYERS; layer++) {
+        const config = CLOUD_CONFIGS[layer];
+        for (let i = 0; i < config.count; i++) {
+            clouds.push(new Cloud(layer));
+        }
+    }
+}
+
+// 更新云朵
+function updateClouds() {
+    for (let cloud of clouds) {
+        cloud.update();
+    }
+}
+
+// 绘制云朵
+function drawClouds() {
+    // 按层级从后到前绘制（远景云先绘制，前景云最后绘制）
+    // 这样可以确保前景云显示在远景云的前面，增强层次感
+    for (let layer = CLOUD_LAYERS - 1; layer >= 0; layer--) {
+        const layerClouds = clouds.filter(cloud => cloud.layerIndex === layer);
+        for (let cloud of layerClouds) {
+            cloud.draw();
+        }
     }
 }
 
@@ -263,6 +363,9 @@ function resetGame() {
     dino.dy = 0;
     dino.grounded = true;
 
+    // 重置云朵
+    initClouds();
+
     // 重置界面
     currentScoreElement.textContent = score;
     currentSpeedElement.textContent = currentSpeed.toFixed(1); // 重置速度显示
@@ -277,8 +380,14 @@ function gameLoop() {
     // 绘制地面
     drawGround();
 
+    // 绘制云朵（云朵应在地面之上，恐龙和障碍物之下）
+    drawClouds();
+
     if (gameState === 'playing') {
         frames++;
+
+        // 更新云朵
+        updateClouds();
 
         // 更新和绘制恐龙
         updateDino();
@@ -364,6 +473,9 @@ canvas.addEventListener('touchstart', (e) => {
         jump();
     }
 });
+
+// 初始化云朵
+initClouds();
 
 // 启动游戏循环
 gameLoop();
