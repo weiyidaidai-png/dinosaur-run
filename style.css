@@ -6,12 +6,13 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f0f0f0;
+    background-color: #f7f7f7; /* 白天浅色背景 */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     padding: 20px;
+    transition: background-color 0.5s ease;
 }
 
 .game-container {
@@ -22,6 +23,7 @@ body {
     text-align: center;
     max-width: 900px;
     width: 100%;
+    transition: background-color 0.5s ease;
 }
 
 .game-header {
@@ -32,16 +34,24 @@ body {
     padding: 10px 20px;
     background-color: #f8f9fa;
     border-radius: 5px;
+    transition: background-color 0.5s ease;
 }
 
-.score, .high-score {
+.score, .high-score, .speed, .mode {
     font-size: 18px;
     font-weight: bold;
     color: #333;
+    transition: color 0.5s ease;
 }
 
 #current-score, #high-score {
     color: #e74c3c;
+    transition: color 0.5s ease;
+}
+
+#current-speed {
+    color: #3498db;
+    transition: color 0.5s ease;
 }
 
 #gameCanvas {
@@ -50,6 +60,7 @@ body {
     background-color: #f0f0f0;
     border: 2px solid #333;
     border-radius: 5px;
+    transition: background-color 0.5s ease, border-color 0.5s ease;
 }
 
 .game-controls {
@@ -80,6 +91,7 @@ body {
     margin-top: 15px;
     color: #666;
     font-size: 14px;
+    transition: color 0.5s ease;
 }
 
 .instructions p {
@@ -96,27 +108,74 @@ body {
     border-radius: 10px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
     z-index: 1000;
+    transition: background-color 0.5s ease;
 }
 
 .game-over h2 {
     color: #e74c3c;
     margin-bottom: 15px;
     font-size: 24px;
+    transition: color 0.5s ease;
 }
 
 .game-over p {
     color: #333;
     margin-bottom: 20px;
     font-size: 16px;
+    transition: color 0.5s ease;
 }
 
 #final-score {
     color: #e74c3c;
     font-weight: bold;
+    transition: color 0.5s ease;
 }
 
 .hidden {
     display: none !important;
+}
+
+/* Night mode styles */
+body.night-mode {
+    background-color: #0d1117; /* 夜晚深色背景 */
+}
+
+body.night-mode .game-container {
+    background-color: #161b22; /* 夜晚容器背景 */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+body.night-mode .game-header {
+    background-color: #21262d; /* 夜晚头部背景 */
+}
+
+body.night-mode .score,
+body.night-mode .high-score,
+body.night-mode .speed,
+body.night-mode .mode {
+    color: #e6edf3; /* 夜晚文本颜色 */
+}
+
+body.night-mode #gameCanvas {
+    background-color: #0d1117; /* 夜晚画布背景 */
+    border-color: #30363d; /* 夜晚画布边框 */
+}
+
+body.night-mode .instructions {
+    color: #8b949e; /* 夜晚说明文本颜色 */
+}
+
+body.night-mode .game-over {
+    background-color: #161b22; /* 夜晚游戏结束界面背景 */
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+}
+
+body.night-mode .game-over h2 {
+    color: #f85149; /* 夜晚游戏结束标题颜色 */
+}
+
+body.night-mode .game-over p {
+    color: #e6edf3; /* 夜晚游戏结束文本颜色 */
 }
 
 @media (max-width: 768px) {
